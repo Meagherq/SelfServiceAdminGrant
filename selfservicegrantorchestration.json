@@ -2,104 +2,9 @@
     "definition": {
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
         "actions": {
-            "Access_Token_Response_Type": {
+            "Call_Delta_Query_Response_Type": {
                 "inputs": {
-                    "content": "@body('Get_Access_Token')",
-                    "schema": {
-                        "properties": {
-                            "access_token": {
-                                "type": "string"
-                            },
-                            "expires_in": {
-                                "type": "integer"
-                            },
-                            "ext_expires_in": {
-                                "type": "integer"
-                            },
-                            "token_type": {
-                                "type": "string"
-                            }
-                        },
-                        "type": "object"
-                    }
-                },
-                "runAfter": {
-                    "Get_Access_Token": [
-                        "SUCCEEDED"
-                    ]
-                },
-                "trackedProperties": {},
-                "type": "ParseJson"
-            },
-            "Call_Delta_Query": {
-                "inputs": {
-                    "headers": {
-                        "Authorization": "Bearer @{body('Access_Token_Response_Type')?['access_token']}"
-                    },
-                    "method": "GET",
-                    "uri": "@body('DeltaUrl_Response_Type')?['url']"
-                },
-                "runAfter": {
-                    "Access_Token_Response_Type": [
-                        "SUCCEEDED"
-                    ]
-                },
-                "runtimeConfiguration": {
-                    "contentTransfer": {
-                        "transferMode": "Chunked"
-                    }
-                },
-                "type": "Http"
-            },
-            "Create_or_update_item": {
-                "inputs": {
-                    "parameters": {
-                        "containerId": "deltas",
-                        "databaseId": "applications",
-                        "isUpsert": true,
-                        "item": "{ \"id\": \"0\", \"url\" : \"@{body('Delta_Query_Response_Type')?['@odata.deltaLink']}\" }"
-                    },
-                    "serviceProviderConfiguration": {
-                        "connectionName": "AzureCosmosDB",
-                        "operationId": "CreateOrUpdateDocument",
-                        "serviceProviderId": "/serviceProviders/AzureCosmosDB"
-                    }
-                },
-                "runAfter": {
-                    "Iterate_through_Delta_App_Registrations": [
-                        "SUCCEEDED",
-                        "TIMEDOUT",
-                        "SKIPPED",
-                        "FAILED"
-                    ]
-                },
-                "type": "ServiceProvider"
-            },
-            "DeltaUrl_Response_Type": {
-                "inputs": {
-                    "content": "@body('Read_DeltaUrl_from_Cosmos')?['content']",
-                    "schema": {
-                        "properties": {
-                            "id": {
-                                "type": "string"
-                            },
-                            "url": {
-                                "type": "string"
-                            }
-                        },
-                        "type": "object"
-                    }
-                },
-                "runAfter": {
-                    "Read_DeltaUrl_from_Cosmos": [
-                        "SUCCEEDED"
-                    ]
-                },
-                "type": "ParseJson"
-            },
-            "Delta_Query_Response_Type": {
-                "inputs": {
-                    "content": "@body('Call_Delta_Query')",
+                    "content": "@body('Call_ServicePrincipals_Delta_Query')",
                     "schema": {
                         "properties": {
                             "@@odata.context": {
@@ -164,15 +69,110 @@
                     }
                 },
                 "runAfter": {
-                    "Call_Delta_Query": [
+                    "Call_ServicePrincipals_Delta_Query": [
                         "SUCCEEDED"
                     ]
                 },
                 "type": "ParseJson"
             },
-            "Get_Access_Token": {
+            "Call_ServicePrincipals_Delta_Query": {
                 "inputs": {
-                    "body": "client_id={{CLIENT_ID}}2&scope=https://graph.microsoft.com/.default&grant_type=client_credentials&client_secret={{CLIENT_SECRET}}",
+                    "headers": {
+                        "Authorization": "Bearer @{body('Get_Access_Token_For_MS_Graph_Response_Type')?['access_token']}"
+                    },
+                    "method": "GET",
+                    "uri": "@body('DeltaUrl_Response_Type')?['url']"
+                },
+                "runAfter": {
+                    "Get_Access_Token_For_MS_Graph_Response_Type": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "runtimeConfiguration": {
+                    "contentTransfer": {
+                        "transferMode": "Chunked"
+                    }
+                },
+                "type": "Http"
+            },
+            "Create_or_update_item": {
+                "inputs": {
+                    "parameters": {
+                        "containerId": "deltas",
+                        "databaseId": "applications",
+                        "isUpsert": true,
+                        "item": "{ \"id\": \"0\", \"url\" : \"@{body('Call_Delta_Query_Response_Type')?['@odata.deltaLink']}\" }"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "AzureCosmosDB",
+                        "operationId": "CreateOrUpdateDocument",
+                        "serviceProviderId": "/serviceProviders/AzureCosmosDB"
+                    }
+                },
+                "runAfter": {
+                    "Iterate_through_Delta_App_Registrations": [
+                        "SUCCEEDED",
+                        "TIMEDOUT",
+                        "SKIPPED",
+                        "FAILED"
+                    ]
+                },
+                "type": "ServiceProvider"
+            },
+            "DeltaUrl_Response_Type": {
+                "inputs": {
+                    "content": "@body('Read_Applications_DeltaUrl_from_Cosmos')?['content']",
+                    "schema": {
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "url": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {
+                    "Read_Applications_DeltaUrl_from_Cosmos": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "Get_Access_Token_For_MS_Graph_Response_Type": {
+                "inputs": {
+                    "content": "@body('Get_Access_Token_for_MS_Graph')",
+                    "schema": {
+                        "properties": {
+                            "access_token": {
+                                "type": "string"
+                            },
+                            "expires_in": {
+                                "type": "integer"
+                            },
+                            "ext_expires_in": {
+                                "type": "integer"
+                            },
+                            "token_type": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {
+                    "Get_Access_Token_for_MS_Graph": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "trackedProperties": {},
+                "type": "ParseJson"
+            },
+            "Get_Access_Token_for_MS_Graph": {
+                "inputs": {
+                    "body": "client_id={{CLIENT_ID}}&scope=https://graph.microsoft.com/.default&grant_type=client_credentials&client_secret={{CLIENT_SECRET}}",
                     "headers": {
                         "content-type": "application/x-www-form-urlencoded"
                     },
@@ -251,7 +251,7 @@
                     ]
                 },
                 "runAfter": {
-                    "Delta_Query_Response_Type": [
+                    "Call_Delta_Query_Response_Type": [
                         "SUCCEEDED"
                     ]
                 },
@@ -279,7 +279,7 @@
                     "GET_appRoleAssignments_for_ServicePrincipal": {
                         "inputs": {
                             "headers": {
-                                "Authorization": "Bearer @{body('Access_Token_Response_Type')?['access_token']}"
+                                "Authorization": "Bearer @{body('Get_Access_Token_For_MS_Graph_Response_Type')?['access_token']}"
                             },
                             "method": "GET",
                             "uri": "https://graph.microsoft.com/v1.0/servicePrincipals/@{body('ServicePrincipal_Details_Type')?['value'][0]['id']}/appRoleAssignments?$select=appRoleId"
@@ -300,7 +300,7 @@
                     "Get_Service_Principal_Details": {
                         "inputs": {
                             "headers": {
-                                "Authorization": "Bearer @{body('Access_Token_Response_Type')?['access_token']}"
+                                "Authorization": "Bearer @{body('Get_Access_Token_For_MS_Graph_Response_Type')?['access_token']}"
                             },
                             "method": "GET",
                             "uri": "https://graph.microsoft.com/v1.0/servicePrincipals?$filter=appId eq '@{item()?['appId']}'"
@@ -315,6 +315,7 @@
                                 "transferMode": "Chunked"
                             }
                         },
+                        "trackedProperties": {},
                         "type": "Http"
                     },
                     "Iterate_through_configured_OAuth_permissions_for_App_Registration": {
@@ -323,69 +324,41 @@
                                 "actions": {
                                     "Condition": {
                                         "actions": {
-                                            "Post_adaptive_card_and_wait_for_a_response": {
+                                            "Get_Owner": {
                                                 "inputs": {
-                                                    "body": {
-                                                        "body": {
-                                                            "messageBody": "{    \"type\": \"AdaptiveCard\",    \"$schema\": \"https://adaptivecards.io/schemas/adaptive-card.json\",    \"padding\": \"none\",    \"body\": [        {            \"type\": \"Container\",            \"style\": \"emphasis\",            \"items\": [                {                    \"type\": \"ColumnSet\",                    \"columns\": [                        {                            \"type\": \"Column\",                            \"items\": [                                {                                    \"type\": \"TextBlock\",                                    \"size\": \"large\",                                    \"text\": \"**PENDING APPROVAL for @{item()?['id']}**\"                                }                            ],                            \"width\": \"stretch\"                        },                        {                            \"type\": \"Column\",                            \"verticalContentAlignment\": \"center\",                            \"items\": [                                {                                    \"type\": \"Image\",                                    \"url\": \"https://qms3.blob.core.windows.net/test/servicenow.png\",                                    \"height\": \"20px\",                                    \"altText\": \"Service Now Logo\"                                }                            ],                            \"width\": \"auto\"                        }                    ]                }            ]        },        {            \"type\": \"Container\",            \"padding\": \"default\",            \"spacing\": \"None\",            \"items\": [                {                    \"type\": \"ColumnSet\",                    \"columns\": [                        {                            \"type\": \"Column\",                            \"verticalContentAlignment\": \"center\",                            \"items\": [                                {                                    \"type\": \"Image\",                                    \"style\": \"Person\",                                    \"url\": \"https://qms3.blob.core.windows.net/test/servicenow_avatar.jpg\",                                    \"width\": \"40px\",                                    \"altText\": \"Grant Hulbert's Profile Picture\"                                }                            ],                            \"width\": \"auto\"                        },                        {                            \"type\": \"Column\",                            \"verticalContentAlignment\": \"center\",                            \"items\": [                                {                                    \"type\": \"TextBlock\",                                    \"size\": \"Medium\",                                    \"text\": \"Requested by **Grant Hulbert**\",                                    \"wrap\": true                                },                                {                                    \"type\": \"TextBlock\",                                    \"spacing\": \"None\",                                    \"text\": \"grant.hulbert@servicenow.com\",                                    \"isSubtle\": true                                }                            ],                            \"width\": \"stretch\"                        }                    ]                },                {                    \"type\": \"Container\",                    \"spacing\": \"large\",                    \"items\": [                        {                            \"type\": \"ColumnSet\",                            \"columns\": [                                {                                    \"type\": \"Column\",                                    \"items\": [                                        {                                            \"type\": \"Image\",                                            \"url\": \"https://c.s-microsoft.com/en-us/CMSImages/Surface_Book_Home_1_HeroFullBleed_V1.jpg?version=37221e90-d06c-f330-9107-d9ff7371a200\",                                            \"altText\": \"Microsoft Surface Book Image\"                                        }                                    ],                                    \"width\": 1                                },                                {                                    \"type\": \"Column\",                                    \"items\": [                                        {                                            \"type\": \"TextBlock\",                                            \"size\": \"Medium\",                                            \"weight\": \"Bolder\",                                            \"wrap\": true,                                            \"text\": \"Microsoft Surface Book\"                                        },                                        {                                            \"type\": \"TextBlock\",                                            \"spacing\": \"None\",                                            \"color\": \"accent\",                                            \"size\": \"large\",                                            \"text\": \"$1,499.00\"                                        },                                        {                                            \"type\": \"TextBlock\",                                            \"wrap\": true,                                            \"text\": \"Request id: [REQ0010044](https://www.microsoft.com/en-us/surface/devices/surface-book/overview)\"                                        },                                        {                                            \"type\": \"TextBlock\",                                            \"spacing\": \"None\",                                            \"wrap\": true,                                            \"text\": \"Details: Requesting a test device\"                                        }                                    ],                                    \"width\": 1                                }                            ]                        }                    ]                },                {                    \"type\": \"ActionSet\",                    \"spacing\": \"large\",                    \"actions\": [                        {                            \"type\": \"Action.Submit\",                            \"title\": \"Approve\",                            \"id\": \"btnApprove\"                         },                        {                            \"type\": \"Action.Submit\",                            \"title\": \"Reject\",                            \"id\": \"btnReject\"                         }                    ]                }            ]        }    ],    \"version\": \"1.0\"}",
-                                                            "recipient": {
-                                                                "to": "admin@MngEnvMCAP884881.onmicrosoft.com"
-                                                            },
-                                                            "updateMessage": "Thanks for your response!"
-                                                        },
-                                                        "notificationUrl": "@{listCallbackUrl()}"
+                                                    "headers": {
+                                                        "Authorization": "Bearer @{body('Get_Access_Token_For_MS_Graph_Response_Type')?['access_token']}"
                                                     },
-                                                    "host": {
-                                                        "connection": {
-                                                            "referenceName": "teams"
-                                                        }
-                                                    },
-                                                    "path": "/v1.0/teams/conversation/gatherinput/poster/@{encodeURIComponent('Flow bot')}/location/@{encodeURIComponent('Chat with Flow bot')}/$subscriptions"
+                                                    "method": "GET",
+                                                    "uri": "https://graph.microsoft.com/v1.0/servicePrincipals/@{body('Query_MS_Graph_for_SP_ObjectId_to_Grant_AppRole__')?['value'][0]['id']}/owners"
                                                 },
-                                                "type": "ApiConnectionWebhook"
-                                            },
-                                            "Teams_Approval_Condition": {
-                                                "actions": {
-                                                    "Grant_AppRoleAssignment": {
-                                                        "inputs": {
-                                                            "body": {
-                                                                "appRoleId": "@{item()?['id']}",
-                                                                "principalId": "@{variables('appIdForPermissions')}",
-                                                                "resourceId": "@{variables('deltaServicePrincipalId')}"
-                                                            },
-                                                            "headers": {
-                                                                "Authorization": "Bearer @{body('Access_Token_Response_Type')?['access_token']}"
-                                                            },
-                                                            "method": "POST",
-                                                            "uri": "https://graph.microsoft.com/v1.0/servicePrincipals/@{variables('appIdForPermissions')}/appRoleAssignments"
-                                                        },
-                                                        "runtimeConfiguration": {
-                                                            "contentTransfer": {
-                                                                "transferMode": "Chunked"
-                                                            }
-                                                        },
-                                                        "type": "Http"
+                                                "runtimeConfiguration": {
+                                                    "contentTransfer": {
+                                                        "transferMode": "Chunked"
                                                     }
                                                 },
-                                                "else": {
-                                                    "actions": {}
-                                                },
-                                                "expression": {
-                                                    "and": [
-                                                        {
-                                                            "equals": [
-                                                                "@body('Post_adaptive_card_and_wait_for_a_response')?['submitActionId']",
-                                                                "btnApprove"
-                                                            ]
+                                                "type": "Http"
+                                            },
+                                            "Invoke_Admin_Grant_Review_Workflow": {
+                                                "inputs": {
+                                                    "body": {
+                                                        "appRoleId": "@{item()?['id']}",
+                                                        "owner": "@{body('Get_Owner')?['value'][0]['userPrincipalName']}",
+                                                        "principalId": "@{variables('deltaServicePrincipalId')}",
+                                                        "resourceId": "@{body('Query_MS_Graph_for_SP_ObjectId_to_Grant_AppRole__')?['value'][0]['id']}"
+                                                    },
+                                                    "host": {
+                                                        "workflow": {
+                                                            "id": "admin-grant-review-workflow"
                                                         }
-                                                    ]
+                                                    }
                                                 },
                                                 "runAfter": {
-                                                    "Post_adaptive_card_and_wait_for_a_response": [
+                                                    "Get_Owner": [
                                                         "SUCCEEDED"
                                                     ]
                                                 },
-                                                "type": "If"
+                                                "type": "Workflow"
                                             }
                                         },
                                         "else": {
@@ -409,12 +382,13 @@
                                                 }
                                             ]
                                         },
+                                        "trackedProperties": {},
                                         "type": "If"
                                     }
                                 },
                                 "foreach": "@variables('OAuthPermissionSet')",
                                 "runAfter": {
-                                    "Set_OauthPermissionSet": [
+                                    "Query_MS_Graph_for_SP_ObjectId_to_Grant_AppRole__": [
                                         "SUCCEEDED"
                                     ]
                                 },
@@ -457,19 +431,39 @@
                                 },
                                 "type": "ParseJson"
                             },
+                            "Query_MS_Graph_for_SP_ObjectId_to_Grant_AppRole__": {
+                                "inputs": {
+                                    "headers": {
+                                        "Authorization": "Bearer @{body('Get_Access_Token_For_MS_Graph_Response_Type')?['access_token']}"
+                                    },
+                                    "method": "GET",
+                                    "uri": "https://graph.microsoft.com/v1.0/servicePrincipals?$filter=appId eq '@{variables('appIdForPermissions')}'"
+                                },
+                                "runAfter": {
+                                    "Set_OauthPermissionSet": [
+                                        "SUCCEEDED"
+                                    ]
+                                },
+                                "runtimeConfiguration": {
+                                    "contentTransfer": {
+                                        "transferMode": "Chunked"
+                                    }
+                                },
+                                "type": "Http"
+                            },
                             "Set_OauthPermissionSet": {
                                 "inputs": {
                                     "name": "OAuthPermissionSet",
                                     "value": "@body('Parse_JSON')?['resourceAccess']"
                                 },
                                 "runAfter": {
-                                    "Set_appId_for_consumed_App_Reg": [
+                                    "Set_appId_for_AppRole_App_Registration": [
                                         "SUCCEEDED"
                                     ]
                                 },
                                 "type": "SetVariable"
                             },
-                            "Set_appId_for_consumed_App_Reg": {
+                            "Set_appId_for_AppRole_App_Registration": {
                                 "inputs": {
                                     "name": "appIdForPermissions",
                                     "value": "@body('Parse_JSON')?['resourceAppId']"
@@ -691,7 +685,7 @@
                     "Set_Delta_Service_Principal_Id": {
                         "inputs": {
                             "name": "deltaServicePrincipalId",
-                            "value": "@{item()?['id']}"
+                            "value": "@{body('Get_Service_Principal_Details')?['value'][0]['id']}"
                         },
                         "runAfter": {
                             "ServicePrincipal_Details_Type": [
@@ -717,10 +711,11 @@
                             "name": "RequiredResourceAccessArray",
                             "value": "@item()?['requiredResourceAccess']"
                         },
+                        "trackedProperties": {},
                         "type": "SetVariable"
                     }
                 },
-                "foreach": "@body('Delta_Query_Response_Type')?['value']",
+                "foreach": "@body('Call_ServicePrincipals_Delta_Query')?['value']",
                 "runAfter": {
                     "Initialize_Delta_Service_Principal_Id": [
                         "SUCCEEDED"
@@ -734,7 +729,7 @@
                 "trackedProperties": {},
                 "type": "Foreach"
             },
-            "Read_DeltaUrl_from_Cosmos": {
+            "Read_Applications_DeltaUrl_from_Cosmos": {
                 "inputs": {
                     "parameters": {
                         "containerId": "deltas",

@@ -1,0 +1,150 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition": {
+                "actions": {
+                    "Admin_Grant_Role_Assignment": {
+                        "inputs": {
+                            "body": {
+                                "appRoleId": "@{triggerBody()?['appRoleId']}",
+                                "principalId": "@{triggerBody()?['principalId']}",
+                                "resourceId": "@{triggerBody()?['resourceId']}"
+                            },
+                            "headers": {
+                                "Authorization": "Bearer @{body('Get_Access_Token_For_MS_Graph_Response_Type')?['access_token']}"
+                            },
+                            "method": "POST",
+                            "uri": "https://graph.microsoft.com/v1.0/servicePrincipals/@{triggerBody()?['principalId']}/appRoleAssignments"
+                        },
+                        "runAfter": {
+                            "Get_Access_Token_For_MS_Graph_Response_Type": [
+                                "SUCCEEDED"
+                            ]
+                        },
+                        "runtimeConfiguration": {
+                            "contentTransfer": {
+                                "transferMode": "Chunked"
+                            }
+                        },
+                        "type": "Http"
+                    },
+                    "Get_Access_Token_For_MS_Graph_Response_Type": {
+                        "inputs": {
+                            "content": "@body('Get_Access_Token_for_MS_Graph')",
+                            "schema": {
+                                "properties": {
+                                    "access_token": {
+                                        "type": "string"
+                                    },
+                                    "expires_in": {
+                                        "type": "integer"
+                                    },
+                                    "ext_expires_in": {
+                                        "type": "integer"
+                                    },
+                                    "token_type": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "runAfter": {
+                            "Get_Access_Token_for_MS_Graph": [
+                                "SUCCEEDED"
+                            ]
+                        },
+                        "type": "ParseJson"
+                    },
+                    "Get_Access_Token_for_MS_Graph": {
+                        "inputs": {
+                            "body": "client_id={{CLIENT_ID}}&scope=https://graph.microsoft.com/.default&grant_type=client_credentials&client_secret={{CLIENT_ID}}",
+                            "headers": {
+                                "content-type": "application/x-www-form-urlencoded"
+                            },
+                            "method": "POST",
+                            "uri": "https://login.microsoftonline.com/{{TENANT_ID}}/oauth2/v2.0/token"
+                        },
+                        "runtimeConfiguration": {
+                            "contentTransfer": {
+                                "transferMode": "Chunked"
+                            }
+                        },
+                        "type": "Http"
+                    }
+                },
+                "else": {
+                    "actions": {}
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "equals": [
+                                "@body('Post_adaptive_card_and_wait_for_a_response')['submitActionId']",
+                                "btnApprove"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Post_adaptive_card_and_wait_for_a_response": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "trackedProperties": {},
+                "type": "If"
+            },
+            "Post_adaptive_card_and_wait_for_a_response": {
+                "inputs": {
+                    "body": {
+                        "body": {
+                            "messageBody": "{    \"type\": \"AdaptiveCard\",    \"$schema\": \"https://adaptivecards.io/schemas/adaptive-card.json\",    \"padding\": \"none\",    \"body\": [        {            \"type\": \"Container\",            \"style\": \"emphasis\",            \"items\": [                {                    \"type\": \"ColumnSet\",                    \"columns\": [                        {                            \"type\": \"Column\",                            \"items\": [                                {                                    \"type\": \"TextBlock\",                                    \"size\": \"large\",                                    \"text\": \"**PENDING APPROVAL for @{item()?['id']}**\"                                }                            ],                            \"width\": \"stretch\"                        },                        {                            \"type\": \"Column\",                            \"verticalContentAlignment\": \"center\",                            \"items\": [                                {                                    \"type\": \"Image\",                                    \"url\": \"https://qms3.blob.core.windows.net/test/servicenow.png\",                                    \"height\": \"20px\",                                    \"altText\": \"Service Now Logo\"                                }                            ],                            \"width\": \"auto\"                        }                    ]                }            ]        },        {            \"type\": \"Container\",            \"padding\": \"default\",            \"spacing\": \"None\",            \"items\": [                {                    \"type\": \"ColumnSet\",                    \"columns\": [                        {                            \"type\": \"Column\",                            \"verticalContentAlignment\": \"center\",                            \"items\": [                                {                                    \"type\": \"Image\",                                    \"style\": \"Person\",                                    \"url\": \"https://qms3.blob.core.windows.net/test/servicenow_avatar.jpg\",                                    \"width\": \"40px\",                                    \"altText\": \"Grant Hulbert's Profile Picture\"                                }                            ],                            \"width\": \"auto\"                        },                        {                            \"type\": \"Column\",                            \"verticalContentAlignment\": \"center\",                            \"items\": [                                {                                    \"type\": \"TextBlock\",                                    \"size\": \"Medium\",                                    \"text\": \"Requested by **Grant Hulbert**\",                                    \"wrap\": true                                },                                {                                    \"type\": \"TextBlock\",                                    \"spacing\": \"None\",                                    \"text\": \"grant.hulbert@servicenow.com\",                                    \"isSubtle\": true                                }                            ],                            \"width\": \"stretch\"                        }                    ]                },                {                    \"type\": \"Container\",                    \"spacing\": \"large\",                    \"items\": [                        {                            \"type\": \"ColumnSet\",                            \"columns\": [                                {                                    \"type\": \"Column\",                                    \"items\": [                                        {                                            \"type\": \"Image\",                                            \"url\": \"https://c.s-microsoft.com/en-us/CMSImages/Surface_Book_Home_1_HeroFullBleed_V1.jpg?version=37221e90-d06c-f330-9107-d9ff7371a200\",                                            \"altText\": \"Microsoft Surface Book Image\"                                        }                                    ],                                    \"width\": 1                                },                                {                                    \"type\": \"Column\",                                    \"items\": [                                        {                                            \"type\": \"TextBlock\",                                            \"size\": \"Medium\",                                            \"weight\": \"Bolder\",                                            \"wrap\": true,                                            \"text\": \"Microsoft Surface Book\"                                        },                                        {                                            \"type\": \"TextBlock\",                                            \"spacing\": \"None\",                                            \"color\": \"accent\",                                            \"size\": \"large\",                                            \"text\": \"$1,499.00\"                                        },                                        {                                            \"type\": \"TextBlock\",                                            \"wrap\": true,                                            \"text\": \"Request id: [REQ0010044](https://www.microsoft.com/en-us/surface/devices/surface-book/overview)\"                                        },                                        {                                            \"type\": \"TextBlock\",                                            \"spacing\": \"None\",                                            \"wrap\": true,                                            \"text\": \"Details: Requesting a test device\"                                        }                                    ],                                    \"width\": 1                                }                            ]                        }                    ]                },                {                    \"type\": \"ActionSet\",                    \"spacing\": \"large\",                    \"actions\": [                        {                            \"type\": \"Action.Submit\",                            \"title\": \"Approve\",                            \"id\": \"btnApprove\"                         },                        {                            \"type\": \"Action.Submit\",                            \"title\": \"Reject\",                            \"id\": \"btnReject\"                         }                    ]                }            ]        }    ],    \"version\": \"1.0\"}",
+                            "recipient": {
+                                "to": "@{triggerBody()?['owner']}"
+                            },
+                            "updateMessage": "Thanks for your response!"
+                        },
+                        "notificationUrl": "@{listCallbackUrl()}"
+                    },
+                    "host": {
+                        "connection": {
+                            "referenceName": "teams"
+                        }
+                    },
+                    "path": "/v1.0/teams/conversation/gatherinput/poster/Flow bot/location/@{encodeURIComponent('Chat with Flow bot')}/$subscriptions"
+                },
+                "runAfter": {},
+                "type": "ApiConnectionWebhook"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "inputs": {
+                    "schema": {
+                        "properties": {
+                            "appRoleId": {
+                                "type": "string"
+                            },
+                            "owner": {
+                                "type": "string"
+                            },
+                            "principalId": {
+                                "type": "string"
+                            },
+                            "resourceId": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}
